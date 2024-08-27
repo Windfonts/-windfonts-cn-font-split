@@ -72,7 +72,7 @@ cn-font-split -h
 ### 项目内打包代码
 
 ```js
-import { fontSplit } from 'cn-font-split';
+import { fontSplit } from 'wf-cn-font-split';
 
 fontSplit({
     FontPath: './fonts/SourceHanSerifCN-Bold.ttf', // 推荐使用 otf、ttf 字体

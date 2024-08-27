@@ -1,16 +1,5 @@
-# 中文 Web Font 切割工具 5.0
-
-![中文网字计划](/assets/chinese-fonts.png)
-
-![updateTime](https://img.shields.io/badge/更新时间-2024/07/16-green)
-![author](https://img.shields.io/badge/author-江夏尧-green)
-![npmVersion](https://img.shields.io/badge/LTS_version-5.1.0-green)
-[![](https://data.jsdelivr.com/v1/package/npm/cn-font-split/badge)](https://www.jsdelivr.com/package/npm/cn-font-split)
-
-![NPM License](https://img.shields.io/npm/l/%40konghayao%2Fcn-font-split)
-
-| [中文网字计划](https://chinese-font.netlify.app/) | [Github](https://github.com/KonghaYao/cn-font-split) | [在线使用](https://chinese-font.netlify.app/online-split/) |
-| ------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
+# 中文 Web Font 切割工具cn-font-split 5.0 -windfonts定制版
+ 
 
 ## 简介
 
@@ -52,7 +41,7 @@ Nodejs 版本推荐使用 **大于 18 的版本**。如低级版本或者其他�
 ### 安装
 
 ```bash
-npm install cn-font-split
+npm install wf-cn-font-split
 npm install cn-font-split -g # 如果使用命令行，推荐全局安装
 ```
 
@@ -72,7 +61,7 @@ cn-font-split -h
 ### 项目内打包代码
 
 ```js
-import { fontSplit } from 'cn-font-split';
+import { fontSplit } from 'wf-cn-font-split';
 
 fontSplit({
     FontPath: './fonts/SourceHanSerifCN-Bold.ttf', // 推荐使用 otf、ttf 字体
