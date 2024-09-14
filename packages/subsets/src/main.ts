@@ -6,7 +6,7 @@ import path from 'path';
 import byteSize from 'byte-size';
 import { IOutputFile, InputTemplate } from './interface';
 import { BundleReporter, createReporter } from './templates/reporter';
-import { createCSS } from './templates/css';
+import { createCSS, createCSSZh } from './templates/css';
 import { subsetsToSet } from './utils/subsetsToSet';
 import { useSubset } from './useSubset/index';
 import { getAutoSubset } from './useSubset/getAutoSubset';
@@ -284,6 +284,12 @@ function createOutputCSSProcess(outputFile: IOutputFile) {
             'VF',
         );
         const css = createCSS(subsetResult, nameTable, input.css, VF);
+        const cssZh = createCSSZh(subsetResult, nameTable, input.css,VF)
+        const cssFileName = input.cssFileName ?  'zh_' + input.cssFileName : 'zh_result.css';
+        await outputFile(
+            path.join(input.destFold, cssFileName),
+            cssZh.css,
+        );
         await outputFile(
             path.join(input.destFold, input.cssFileName ?? 'result.css'),
             css.css,

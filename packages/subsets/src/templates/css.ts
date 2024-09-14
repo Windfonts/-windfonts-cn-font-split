@@ -5,6 +5,20 @@ import { getFormatFromFontPath } from './css/getFormatFromFontPath';
 import { subFamilyToWeight } from './css/subFamilyToWeight';
 import type { NameTable } from './reporter';
 import { UnicodeRange } from '@japont/unicode-range';
+import {
+    Arabic,
+    Bengali,
+    Cyrillic,
+    CyrillicExt,
+    Devanagari,
+    Greek,
+    GreekExt,
+    Khmer,
+    Latin,
+    LatinExt,
+    Thai,
+    Vietnamese,
+} from '../data/LanguageRange';
 /**
  * 根据字体子集结果和名称表生成CSS样式表。
  *
@@ -54,19 +68,19 @@ export const createCSS = (
     const polyfills =
         typeof css.polyfill === 'string'
             ? [
-                  {
-                      name: css.polyfill,
-                      format: getFormatFromFontPath(css.polyfill),
-                  },
-              ]
+                {
+                    name: css.polyfill,
+                    format: getFormatFromFontPath(css.polyfill),
+                },
+            ]
             : css.polyfill?.map((i) =>
-                  typeof i === 'string'
-                      ? {
-                            name: i,
-                            format: getFormatFromFontPath(i),
-                        }
-                      : i,
-              ) ?? [];
+                typeof i === 'string'
+                    ? {
+                        name: i,
+                        format: getFormatFromFontPath(i),
+                    }
+                    : i,
+            ) ?? [];
 
     /** 确定字体权重，优先使用css中的值，然后是可变字体选项中的，最后是根据子家族名称推断的。 */
     const weight =
@@ -84,15 +98,14 @@ export const createCSS = (
             const str = `@font-face {
 font-family:"${family}";
 src:${[
-                ...locals,
-                `url("./${path}") format("woff2")`,
-                ...polyfills.map(
-                    (i) =>
-                        `url("${i.name}") ${
-                            i.format ? `format("${i.format}")` : ''
-                        }`,
-                ),
-            ].join(',')};
+                    ...locals,
+                    `url("./${path}") format("woff2")`,
+                    ...polyfills.map(
+                        (i) =>
+                            `url("${i.name}") ${i.format ? `format("${i.format}")` : ''
+                            }`,
+                    ),
+                ].join(',')};
 font-style: ${style};
 ${css.fontWeight !== false ? `font-weight: ${weight};` : ''}
 font-display: ${display};
@@ -102,6 +115,126 @@ unicode-range:${unicodeRange};
             const comment =
                 commentSetting.unicodes === true
                     ? createUnicodeCommentForPackage(unicodeRange) + '\n'
+                    : '';
+            // 根据压缩选项返回压缩或未压缩的样式字符串。
+            return (
+                comment +
+                (css.compress !== false ? str.replace(/\n/g, '') : str)
+            );
+        })
+        .join('\n');
+    const header = createHeaderComment(fontData, opts);
+    return { css: header + cssStyleSheet, family, style, weight, display };
+};
+// 生成纯中文字符的css unicode 范围
+export const createCSSZh = (
+    subsetResult: SubsetResult,
+    nameTable: { windows?: NameTable; macintosh?: NameTable },
+    opts: InputTemplate['css'],
+    VFOpts: VFMessage | null,
+) => {
+    // 从名称表中提取字体家族名称，优先使用windows平台的名称。
+    const fontData = Object.fromEntries(
+        Object.entries(nameTable?.windows ?? nameTable?.macintosh ?? {}).map(
+            ([key, val]) => {
+                return [key, typeof val === 'string' ? val : val.en];
+            },
+        ),
+    );
+
+    const css = opts || {};
+    const commentSetting = opts?.comment || {};
+    // 优先使用css中的字体家族名称，否则使用nameTable中的。
+    const family =
+        //! fontData.preferredFamily  不使用这个，因为这个容易引起歧义
+        css.fontFamily || fontData.fontFamily;
+
+    /** 优先使用preferredSubFamily，如果没有，则使用fontSubFamily或fontSubfamily。 */
+    const preferredSubFamily =
+        fontData.preferredSubFamily ||
+        fontData.fontSubFamily ||
+        fontData.fontSubfamily ||
+        '';
+
+    /** 根据子家族名称确定字体样式，如果是斜体，则为italic，否则为normal。 */
+    const style =
+        css.fontStyle || (isItalic(preferredSubFamily) ? 'italic' : 'normal');
+
+    /** 创建本地字体声明字符串。 */
+    const locals = createLocalsString(css, fontData);
+
+    // 处理polyfill选项，将其转换为font-face声明中使用的格式。
+    const polyfills =
+        typeof css.polyfill === 'string'
+            ? [
+                {
+                    name: css.polyfill,
+                    format: getFormatFromFontPath(css.polyfill),
+                },
+            ]
+            : css.polyfill?.map((i) =>
+                typeof i === 'string'
+                    ? {
+                        name: i,
+                        format: getFormatFromFontPath(i),
+                    }
+                    : i,
+            ) ?? [];
+
+    /** 确定字体权重，优先使用css中的值，然后是可变字体选项中的，最后是根据子家族名称推断的。 */
+    const weight =
+        css.fontWeight ||
+        getFontWeightForVF(VFOpts) ||
+        subFamilyToWeight(preferredSubFamily);
+
+    /** 设置字体显示模式，默认为'swap'。 */
+    const display = css.fontDisplay || 'swap';
+
+    const cssStyleSheet = subsetResult
+        //!  反转数组，使得 feature 在后面覆盖前面的 feature
+        .reverse()
+        .map(({ path, unicodeRange }) => {
+            // 排除拉丁字符的unicode范围，因为它们是默认包含的，只显示中文的unicode
+            const unicodeRangeLatin = [
+                Latin,
+                LatinExt,
+                Arabic,
+                Bengali,
+                Cyrillic,
+                CyrillicExt,
+                Devanagari,
+                Greek,
+                GreekExt,
+                Khmer,
+                Thai,
+                Vietnamese,
+            ]
+            const unicodeRangeExtLatin = UnicodeRange
+                .parse(unicodeRange.split(','))
+                .filter(item => !unicodeRangeLatin.flat().includes(item))
+            const unicodeRangZh = UnicodeRange.stringify(unicodeRangeExtLatin).join(',')
+
+            const str = `@font-face {
+font-family:"${family}";
+src:${[
+                    ...locals,
+                    `url("./${path}") format("woff2")`,
+                    ...polyfills.map(
+                        (i) =>
+                            `url("${i.name}") ${i.format ? `format("${i.format}")` : ''
+                            }`,
+                    ),
+                ].join(',')};
+font-style: ${style};
+${css.fontWeight !== false ? `font-weight: ${weight};` : ''}
+font-display: ${display};
+unicode-range:${unicodeRangZh};
+}`; // css 这个句尾不需要分号😭
+
+            // 根据注释设置生成Unicode范围的注释。
+            const comment =
+                commentSetting.unicodes === true
+                    ? createUnicodeCommentForPackage(unicodeRangZh) + '\n'
                     : '';
             // 根据压缩选项返回压缩或未压缩的样式字符串。
             return (
