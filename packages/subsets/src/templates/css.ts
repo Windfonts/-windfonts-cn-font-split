@@ -213,7 +213,8 @@ export const createCSSZh = (
                 .parse(unicodeRange.split(','))
                 .filter(item => !unicodeRangeLatin.flat().includes(item))
             const unicodeRangZh = UnicodeRange.stringify(unicodeRangeExtLatin).join(',')
-
+            // 如果完全没有就返回空字符串，不指定unicode-range会扩大影响范围
+            if (unicodeRangeExtLatin.length <= 0) { return '' }
             const str = `@font-face {
 font-family:"${family}";
 src:${[
